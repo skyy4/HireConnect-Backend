@@ -1,0 +1,106 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+
+      routes:
+        # ── Auth Service ─────────────────────────────────────────────────────
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**,/oauth2/**,/login/oauth2/**
+          filters:
+            - name: JwtAuthFilter
+
+        # ── Profile Service ───────────────────────────────────────────────────
+        - id: profile-service
+          uri: ${PROFILE_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/profiles/**
+          filters:
+            - name: JwtAuthFilter
+
+        # ── Job Service ───────────────────────────────────────────────────────
+        - id: job-service
+          uri: ${JOB_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/jobs/**
+          filters:
+            - name: JwtAuthFilter
+
+        # ── Application Service ───────────────────────────────────────────────
+        - id: application-service
+          uri: ${APPLICATION_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/applications/**
+          filters:
+            - name: JwtAuthFilter
+
+        # ── Interview Service ─────────────────────────────────────────────────
+        - id: interview-service
+          uri: ${INTERVIEW_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/interviews/**
+          filters:
+            - name: JwtAuthFilter
+
+        # ── Notification Service ──────────────────────────────────────────────
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - name: JwtAuthFilter
+
+        # ── Subscription Service ──────────────────────────────────────────────
+        - id: subscription-service
+          uri: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/subscriptions/**,/api/v1/invoices/**
+          filters:
+            - name: JwtAuthFilter
+
+        # ── Analytics Service ─────────────────────────────────────────────────
+        - id: analytics-service
+          uri: ${ANALYTICS_SERVICE_URL:http://localhost:8088}
+          predicates:
+            - Path=/api/v1/analytics/**
+          filters:
+            - name: JwtAuthFilter
+
+# JWT Config (shared secret for gateway validation)
+app:
+  jwt:
+    secret: ${JWT_SECRET:Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.hireconnect: DEBUG
+    org.springframework.cloud.gateway: INFO
