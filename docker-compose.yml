@@ -1,0 +1,231 @@
+version: '3.8'
+
+services:
+  # ── Infrastructure ─────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: hireconnect-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: hireconnect
+      MYSQL_PASSWORD: hireconnect123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hireconnect-net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: hireconnect-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hireconnect-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: hireconnect-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - hireconnect-net
+
+  # ── Microservices ──────────────────────────────────────────────────────────
+  auth-service:
+    build: ./auth-service
+    container_name: hireconnect-auth
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/hireconnect_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      JWT_EXPIRATION_MS: 86400000
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+  profile-service:
+    build: ./profile-service
+    container_name: hireconnect-profile
+    ports:
+      - "8082:8082"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/hireconnect_profile?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+  job-service:
+    build: ./job-service
+    container_name: hireconnect-job
+    ports:
+      - "8083:8083"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/hireconnect_jobs?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+  application-service:
+    build: ./application-service
+    container_name: hireconnect-application
+    ports:
+      - "8084:8084"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/hireconnect_applications?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+  interview-service:
+    build: ./interview-service
+    container_name: hireconnect-interview
+    ports:
+      - "8085:8085"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/hireconnect_interviews?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    container_name: hireconnect-notification
+    ports:
+      - "8086:8086"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/hireconnect_notifications?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      RABBITMQ_HOST: rabbitmq
+      MAIL_USERNAME: ${MAIL_USERNAME:-noreply@hireconnect.com}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-changeme}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+  subscription-service:
+    build: ./subscription-service
+    container_name: hireconnect-subscription
+    ports:
+      - "8087:8087"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/hireconnect_subscriptions?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+  analytics-service:
+    build: ./analytics-service
+    container_name: hireconnect-analytics
+    ports:
+      - "8088:8088"
+    environment:
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      JOB_SERVICE_URL: http://job-service:8083
+      APPLICATION_SERVICE_URL: http://application-service:8084
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:8087
+    depends_on:
+      - job-service
+      - application-service
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: hireconnect-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      JWT_SECRET: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PROFILE_SERVICE_URL: http://profile-service:8082
+      JOB_SERVICE_URL: http://job-service:8083
+      APPLICATION_SERVICE_URL: http://application-service:8084
+      INTERVIEW_SERVICE_URL: http://interview-service:8085
+      NOTIFICATION_SERVICE_URL: http://notification-service:8086
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:8087
+      ANALYTICS_SERVICE_URL: http://analytics-service:8088
+    depends_on:
+      - auth-service
+      - profile-service
+      - job-service
+      - application-service
+      - interview-service
+      - notification-service
+      - subscription-service
+      - analytics-service
+    networks:
+      - hireconnect-net
+    restart: unless-stopped
+
+networks:
+  hireconnect-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
