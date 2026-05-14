@@ -8,7 +8,7 @@ services:
     name: hireconnect-gateway
     env: docker
     dockerfilePath: ./api-gateway/Dockerfile
-    dockerContext: ./api-gateway
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -68,7 +68,7 @@ services:
     name: hireconnect-auth
     env: docker
     dockerfilePath: ./auth-service/Dockerfile
-    dockerContext: ./auth-service
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -104,7 +104,7 @@ services:
     name: hireconnect-profile
     env: docker
     dockerfilePath: ./profile-service/Dockerfile
-    dockerContext: ./profile-service
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -122,7 +122,7 @@ services:
     name: hireconnect-job
     env: docker
     dockerfilePath: ./job-service/Dockerfile
-    dockerContext: ./job-service
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -160,7 +160,7 @@ services:
     name: hireconnect-application
     env: docker
     dockerfilePath: ./application-service/Dockerfile
-    dockerContext: ./application-service
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -190,7 +190,7 @@ services:
     name: hireconnect-interview
     env: docker
     dockerfilePath: ./interview-service/Dockerfile
-    dockerContext: ./interview-service
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -208,7 +208,7 @@ services:
     name: hireconnect-notification
     env: docker
     dockerfilePath: ./notification-service/Dockerfile
-    dockerContext: ./notification-service
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -242,7 +242,7 @@ services:
     name: hireconnect-subscription
     env: docker
     dockerfilePath: ./subscription-service/Dockerfile
-    dockerContext: ./subscription-service
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -260,7 +260,7 @@ services:
     name: hireconnect-analytics
     env: docker
     dockerfilePath: ./analytics-service/Dockerfile
-    dockerContext: ./analytics-service
+    dockerContext: .
     plan: free
     healthCheckPath: /actuator/health
     envVars:
