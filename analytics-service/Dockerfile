@@ -1,9 +1,7 @@
 # ── Stage 1: Build ─────────────────────────────────────────────────────────────
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /workspace
-COPY pom.xml .
-COPY common ./common
-COPY analytics-service ./analytics-service
+COPY . .
 RUN mvn -B package -pl analytics-service --also-make -DskipTests --no-transfer-progress
 
 # ── Stage 2: Runtime ────────────────────────────────────────────────────────────

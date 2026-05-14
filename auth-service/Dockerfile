@@ -1,9 +1,7 @@
 # ── Stage 1: Build ─────────────────────────────────────────────────────────────
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /workspace
-COPY pom.xml .
-COPY common ./common
-COPY auth-service ./auth-service
+COPY . .
 RUN mvn -B package -pl auth-service --also-make -DskipTests --no-transfer-progress
 
 # ── Stage 2: Runtime ────────────────────────────────────────────────────────────

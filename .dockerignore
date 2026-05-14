@@ -1,0 +1,10 @@
+# Exclude build artifacts and sensitive files from Docker context
+**/target/
+**/.git/
+**/*.zip
+**/.env
+**/node_modules/
+**/.idea/
+**/.vscode/
+**/hireconnect-backend.zip
+**/hireconnect-frontend.zip
