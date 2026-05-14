@@ -63,7 +63,7 @@ services:
       - key: GITHUB_CLIENT_SECRET
         sync: false   # Set manually in Render dashboard
       - key: APP_FRONTEND_URL
-        sync: false   # Set to your Vercel URL after deploy
+        value: https://hire-connect-frontend-nine.vercel.app
       - key: MANAGEMENT_HEALTH_MAIL_ENABLED
         value: "false"
 
