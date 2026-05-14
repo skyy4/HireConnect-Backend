@@ -15,53 +15,21 @@ services:
       - key: JWT_SECRET
         value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
       - key: AUTH_SERVICE_URL
-        fromService:
-          name: hireconnect-auth
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-auth.onrender.com
       - key: PROFILE_SERVICE_URL
-        fromService:
-          name: hireconnect-profile
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-profile.onrender.com
       - key: JOB_SERVICE_URL
-        fromService:
-          name: hireconnect-job
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-job.onrender.com
       - key: APPLICATION_SERVICE_URL
-        fromService:
-          name: hireconnect-application
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-application.onrender.com
       - key: INTERVIEW_SERVICE_URL
-        fromService:
-          name: hireconnect-interview
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-interview.onrender.com
       - key: NOTIFICATION_SERVICE_URL
-        fromService:
-          name: hireconnect-notification
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-notification.onrender.com
       - key: SUBSCRIPTION_SERVICE_URL
-        fromService:
-          name: hireconnect-subscription
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-subscription.onrender.com
       - key: ANALYTICS_SERVICE_URL
-        fromService:
-          name: hireconnect-analytics
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-analytics.onrender.com
 
   # ── Auth Service ────────────────────────────────────────────────────────────
   - type: web
@@ -267,20 +235,8 @@ services:
       - key: JWT_SECRET
         value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
       - key: JOB_SERVICE_URL
-        fromService:
-          name: hireconnect-job
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-job.onrender.com
       - key: APPLICATION_SERVICE_URL
-        fromService:
-          name: hireconnect-application
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-application.onrender.com
       - key: SUBSCRIPTION_SERVICE_URL
-        fromService:
-          name: hireconnect-subscription
-          type: web
-          property: host
-          envVarPrefix: http://
+        value: https://hireconnect-subscription.onrender.com
