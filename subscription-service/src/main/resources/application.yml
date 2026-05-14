@@ -20,11 +20,17 @@ app:
   jwt:
     secret: ${JWT_SECRET:Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  razorpay:
+    key-id: ${RAZORPAY_KEY_ID:rzp_test_SgyaqnHebT6pcF}
+    key-secret: ${RAZORPAY_KEY_SECRET:cdH2q68rR3X5AOB0WbxG5lar}
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 springdoc:
   api-docs:
     path: /v3/api-docs

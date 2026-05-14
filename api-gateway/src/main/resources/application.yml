@@ -30,15 +30,15 @@ spring:
           filters:
             - name: JwtAuthFilter
 
-        # ── Profile Service ───────────────────────────────────────────────────
+        # ── Profile Service ── Candidate & Recruiter profiles ────────────────
         - id: profile-service
           uri: ${PROFILE_SERVICE_URL:http://localhost:8082}
           predicates:
-            - Path=/api/v1/profiles/**
+            - Path=/api/v1/profiles/**,/uploads/**
           filters:
             - name: JwtAuthFilter
 
-        # ── Job Service ───────────────────────────────────────────────────────
+        # ── Job Service ── Jobs, Bookmarks, View tracking ────────────────────
         - id: job-service
           uri: ${JOB_SERVICE_URL:http://localhost:8083}
           predicates:
@@ -62,19 +62,40 @@ spring:
           filters:
             - name: JwtAuthFilter
 
-        # ── Notification Service ──────────────────────────────────────────────
-        - id: notification-service
+        # ── Notification Service ── Notifications + Messages ──────────────────
+        - id: notification-service-notifications
           uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
           predicates:
             - Path=/api/v1/notifications/**
           filters:
             - name: JwtAuthFilter
 
-        # ── Subscription Service ──────────────────────────────────────────────
-        - id: subscription-service
+        - id: notification-service-messages
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/messages/**
+          filters:
+            - name: JwtAuthFilter
+
+        # ── Subscription Service ── Plans, Invoices + Wallet ──────────────────
+        - id: subscription-service-plans
           uri: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8087}
           predicates:
             - Path=/api/v1/subscriptions/**,/api/v1/invoices/**
+          filters:
+            - name: JwtAuthFilter
+
+        - id: subscription-service-wallet
+          uri: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/wallet/**
+          filters:
+            - name: JwtAuthFilter
+
+        - id: subscription-service-payments
+          uri: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/payments/**
           filters:
             - name: JwtAuthFilter
 

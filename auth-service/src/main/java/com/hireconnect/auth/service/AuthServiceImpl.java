@@ -4,18 +4,27 @@ import com.hireconnect.auth.config.JwtUtil;
 import com.hireconnect.auth.pojo.*;
 import com.hireconnect.auth.repository.AuthRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
+    private static final String BLACKLIST_PREFIX = "blacklisted_token:";
+
     private final AuthRepository authRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final StringRedisTemplate redisTemplate;
 
     @Value("${app.jwt.secret}")
     private String jwtSecret;
@@ -72,13 +81,37 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(String token) {
-        // In a production system, add token to a Redis blacklist
-        // For now, client-side token removal handles logout
+        try {
+            // Calculate remaining TTL from token expiration
+            long expirationMs = jwtUtil.extractClaims(token).getExpiration().getTime();
+            long remainingMs = expirationMs - System.currentTimeMillis();
+            if (remainingMs > 0) {
+                redisTemplate.opsForValue().set(
+                        BLACKLIST_PREFIX + token, "LOGGED_OUT",
+                        Duration.ofMillis(remainingMs));
+                log.info("Token blacklisted with TTL {}ms", remainingMs);
+            }
+        } catch (Exception ex) {
+            log.warn("Could not blacklist token via Redis (falling back to client-side): {}", ex.getMessage());
+        }
     }
 
     @Override
     public boolean validateToken(String token) {
-        return jwtUtil.isTokenValid(token);
+        if (!jwtUtil.isTokenValid(token)) {
+            return false;
+        }
+        // Check Redis blacklist
+        try {
+            Boolean isBlacklisted = redisTemplate.hasKey(BLACKLIST_PREFIX + token);
+            if (Boolean.TRUE.equals(isBlacklisted)) {
+                log.debug("Token is blacklisted");
+                return false;
+            }
+        } catch (Exception ex) {
+            log.warn("Redis unavailable for blacklist check, skipping: {}", ex.getMessage());
+        }
+        return true;
     }
 
     @Override

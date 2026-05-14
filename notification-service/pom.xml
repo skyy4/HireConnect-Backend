@@ -12,6 +12,13 @@
     <name>Notification Service</name>
     <description>In-app and email notifications</description>
     <dependencies>
+
+        <dependency>
+            <groupId>com.hireconnect</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
         

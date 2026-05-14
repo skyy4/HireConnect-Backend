@@ -3,6 +3,9 @@ package com.hireconnect.interview.service;
 import com.hireconnect.interview.entity.Interview;
 import com.hireconnect.interview.repository.InterviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,14 +16,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InterviewServiceImpl implements InterviewService {
 
+    private static final Logger log = LoggerFactory.getLogger(InterviewServiceImpl.class);
+    private static final String NOTIFICATION_EXCHANGE = "hireconnect.notifications";
+
     private final InterviewRepository interviewRepository;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional
     public Interview scheduleInterview(Interview interview) {
         interview.setStatus("SCHEDULED");
         interview.setCreatedAt(LocalDateTime.now());
-        return interviewRepository.save(interview);
+        Interview saved = interviewRepository.save(interview);
+        publishEvent(saved, "SCHEDULED");
+        return saved;
     }
 
     @Override
@@ -50,7 +59,9 @@ public class InterviewServiceImpl implements InterviewService {
         Interview interview = getInterviewById(interviewId);
         interview.setStatus("CONFIRMED");
         interview.setUpdatedAt(LocalDateTime.now());
-        return interviewRepository.save(interview);
+        Interview saved = interviewRepository.save(interview);
+        publishEvent(saved, "CONFIRMED");
+        return saved;
     }
 
     @Override
@@ -61,7 +72,9 @@ public class InterviewServiceImpl implements InterviewService {
         interview.setStatus("RESCHEDULED");
         interview.setUpdatedAt(LocalDateTime.now());
         if (notes != null) interview.setNotes(notes);
-        return interviewRepository.save(interview);
+        Interview saved = interviewRepository.save(interview);
+        publishEvent(saved, "RESCHEDULED");
+        return saved;
     }
 
     @Override
@@ -71,7 +84,9 @@ public class InterviewServiceImpl implements InterviewService {
         interview.setStatus("CANCELLED");
         interview.setNotes(reason);
         interview.setUpdatedAt(LocalDateTime.now());
-        return interviewRepository.save(interview);
+        Interview saved = interviewRepository.save(interview);
+        publishEvent(saved, "CANCELLED");
+        return saved;
     }
 
     @Override
@@ -82,5 +97,22 @@ public class InterviewServiceImpl implements InterviewService {
     @Override
     public List<Interview> getScheduledBetween(LocalDateTime from, LocalDateTime to) {
         return interviewRepository.findByScheduledAtBetween(from, to);
+    }
+
+    // ── RabbitMQ Event Publishing ──────────────────────────────────────────
+    private void publishEvent(Interview interview, String action) {
+        try {
+            // Format: INTERVIEW:<interviewId>:<action>:<candidateId>:<recruiterId>:<scheduledAt>
+            String message = String.format("INTERVIEW:%d:%s:%d:%d:%s",
+                    interview.getInterviewId(),
+                    action,
+                    interview.getCandidateId(),
+                    interview.getRecruiterId(),
+                    interview.getScheduledAt() != null ? interview.getScheduledAt().toString() : "");
+            rabbitTemplate.convertAndSend(NOTIFICATION_EXCHANGE, "", message);
+            log.info("Published interview event: {}", message);
+        } catch (Exception ex) {
+            log.warn("Failed to publish interview event: {}", ex.getMessage());
+        }
     }
 }

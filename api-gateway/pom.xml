@@ -13,6 +13,19 @@
     <description>HireConnect API Gateway with JWT auth filter</description>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.hireconnect</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- Spring Cloud Gateway -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

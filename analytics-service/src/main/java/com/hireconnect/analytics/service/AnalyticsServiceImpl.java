@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -30,36 +32,64 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     public AnalyticsSummary getRecruiterAnalytics(int recruiterId) {
-        long totalJobs = safeGetLong(jobServiceUrl + "/api/v1/jobs/recruiter/" + recruiterId + "/count");
-        long totalApps = safeGetAppsForRecruiter(recruiterId);
-        long shortlisted = safeGetLong(applicationServiceUrl + "/api/v1/applications/recruiter/" + recruiterId + "/count-by-status?status=SHORTLISTED");
-        long offered = safeGetLong(applicationServiceUrl + "/api/v1/applications/recruiter/" + recruiterId + "/count-by-status?status=OFFERED");
-        long rejected = safeGetLong(applicationServiceUrl + "/api/v1/applications/recruiter/" + recruiterId + "/count-by-status?status=REJECTED");
+        List<Map<String, Object>> jobs = safeGetJobList(jobServiceUrl + "/api/v1/jobs/recruiter/" + recruiterId);
+        long totalJobs = jobs.size();
+
+        long totalApps = 0L;
+        long shortlisted = 0L;
+        long offered = 0L;
+        long rejected = 0L;
+        long totalViews = 0L;
+
+        for (Map<String, Object> job : jobs) {
+            int jobId = toInt(job.get("jobId"));
+            if (jobId <= 0) {
+                continue;
+            }
+            totalApps += safeGetLong(applicationServiceUrl + "/api/v1/applications/job/" + jobId + "/count");
+            shortlisted += safeGetLong(applicationServiceUrl + "/api/v1/applications/job/" + jobId + "/count?status=SHORTLISTED");
+            offered += safeGetLong(applicationServiceUrl + "/api/v1/applications/job/" + jobId + "/count?status=OFFERED");
+            rejected += safeGetLong(applicationServiceUrl + "/api/v1/applications/job/" + jobId + "/count?status=REJECTED");
+            totalViews += safeGetLong(jobServiceUrl + "/api/v1/jobs/" + jobId + "/views/count");
+        }
+
+        double avgTimeToHireDays = calculateAverageTimeToHire(jobs);
 
         return AnalyticsSummary.builder()
                 .recruiterId(recruiterId)
+                .totalJobs(totalJobs)
                 .totalJobsPosted(totalJobs)
+                .totalApplications(totalApps)
                 .totalApplicationsReceived(totalApps)
                 .shortlistedCount(shortlisted)
                 .offeredCount(offered)
                 .rejectedCount(rejected)
-                .avgTimeToHireDays(getTimeToHire(recruiterId))
-                .viewToApplyRatio(totalApps > 0 ? (double) totalApps / Math.max(totalJobs, 1) : 0)
+                .avgTimeToHireDays(avgTimeToHireDays)
+                .viewToApplyRatio(totalViews > 0 ? (double) totalApps / totalViews : 0)
                 .build();
     }
 
     @Override
     public AnalyticsSummary getPlatformStats() {
+        long activeJobs = safeGetLong(jobServiceUrl + "/api/v1/jobs/count?status=ACTIVE");
+        long totalApplications = safeGetLong(applicationServiceUrl + "/api/v1/applications/count");
+        long activeSubscriptions = safeGetSubscriptionList(subscriptionServiceUrl + "/api/v1/subscriptions/admin").stream()
+                .filter(sub -> "ACTIVE".equalsIgnoreCase(String.valueOf(sub.get("status"))))
+                .count();
+
         return AnalyticsSummary.builder()
-                .totalActiveJobs(safeGetLong(jobServiceUrl + "/api/v1/jobs/count?status=ACTIVE"))
-                .totalApplicationsAllTime(safeGetLong(applicationServiceUrl + "/api/v1/applications/count"))
+                .totalActiveJobs(activeJobs)
+                .totalJobsAllTime(activeJobs)
+                .totalApplications(totalApplications)
+                .totalApplicationsAllTime(totalApplications)
+                .activeSubscriptions(activeSubscriptions)
                 .build();
     }
 
     @Override
     public AnalyticsSummary getJobAnalytics(int jobId) {
         long appCount = safeGetLong(applicationServiceUrl + "/api/v1/applications/job/" + jobId + "/count");
-        long viewCount = safeGetLong(jobServiceUrl + "/api/v1/jobs/" + jobId + "/views");
+        long viewCount = safeGetLong(jobServiceUrl + "/api/v1/jobs/" + jobId + "/views/count");
         double ratio = viewCount > 0 ? (double) appCount / viewCount : 0;
 
         return AnalyticsSummary.builder()
@@ -72,7 +102,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     public long getJobViewCount(int jobId) {
-        return safeGetLong(jobServiceUrl + "/api/v1/jobs/" + jobId + "/views");
+        return safeGetLong(jobServiceUrl + "/api/v1/jobs/" + jobId + "/views/count");
     }
 
     @Override
@@ -89,17 +119,27 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     public double getTimeToHire(int recruiterId) {
-        // Simplified: would normally compute from application APPLIED→OFFERED date diff
-        return 14.5; // placeholder avg days
+        List<Map<String, Object>> jobs = safeGetJobList(jobServiceUrl + "/api/v1/jobs/recruiter/" + recruiterId);
+        return calculateAverageTimeToHire(jobs);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
     private long safeGetLong(String url) {
         try {
-            Map<?, ?> response = restTemplate.getForObject(url, Map.class);
-            if (response != null) {
-                Object count = response.get("count");
-                if (count instanceof Number n) return n.longValue();
+            Object response = restTemplate.getForObject(url, Object.class);
+            if (response instanceof Number n) {
+                return n.longValue();
+            }
+            if (response instanceof Map<?, ?> map) {
+                for (String key : List.of("count", "viewCount", "totalJobs", "totalApplications")) {
+                    Object value = map.get(key);
+                    if (value instanceof Number n) {
+                        return n.longValue();
+                    }
+                }
+            }
+            if (response instanceof List<?> list) {
+                return list.size();
             }
         } catch (Exception e) {
             log.warn("Failed to fetch from {}: {}", url, e.getMessage());
@@ -107,8 +147,96 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return 0L;
     }
 
-    private long safeGetAppsForRecruiter(int recruiterId) {
-        // Would query application-service for all jobs by recruiter then sum
-        return safeGetLong(applicationServiceUrl + "/api/v1/applications/count?recruiterId=" + recruiterId);
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> safeGetJobList(String url) {
+        try {
+            Object response = restTemplate.getForObject(url, Object.class);
+            if (response instanceof List<?> list) {
+                return (List<Map<String, Object>>) list;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch jobs from {}: {}", url, e.getMessage());
+        }
+        return List.of();
+    }
+
+    private int toInt(Object value) {
+        if (value instanceof Number n) {
+            return n.intValue();
+        }
+        return -1;
+    }
+
+    private double calculateAverageTimeToHire(List<Map<String, Object>> jobs) {
+        double totalDays = 0.0;
+        long count = 0L;
+
+        for (Map<String, Object> job : jobs) {
+            int jobId = toInt(job.get("jobId"));
+            if (jobId <= 0) {
+                continue;
+            }
+
+            List<Map<String, Object>> offeredApplications = safeGetApplicationList(
+                    applicationServiceUrl + "/api/v1/applications/job/" + jobId + "?status=OFFERED");
+
+            for (Map<String, Object> app : offeredApplications) {
+                LocalDateTime appliedAt = toDateTime(app.get("appliedAt"));
+                LocalDateTime statusUpdatedAt = toDateTime(app.get("statusUpdatedAt"));
+                if (appliedAt == null) {
+                    continue;
+                }
+
+                LocalDateTime end = statusUpdatedAt != null ? statusUpdatedAt : appliedAt;
+                if (end.isBefore(appliedAt)) {
+                    continue;
+                }
+
+                totalDays += Duration.between(appliedAt, end).toMinutes() / 1440.0;
+                count++;
+            }
+        }
+
+        return count > 0 ? totalDays / count : 0.0;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> safeGetApplicationList(String url) {
+        try {
+            Object response = restTemplate.getForObject(url, Object.class);
+            if (response instanceof List<?> list) {
+                return (List<Map<String, Object>>) list;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch applications from {}: {}", url, e.getMessage());
+        }
+        return List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> safeGetSubscriptionList(String url) {
+        try {
+            Object response = restTemplate.getForObject(url, Object.class);
+            if (response instanceof List<?> list) {
+                return (List<Map<String, Object>>) list;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch subscriptions from {}: {}", url, e.getMessage());
+        }
+        return List.of();
+    }
+
+    private LocalDateTime toDateTime(Object value) {
+        if (value instanceof LocalDateTime time) {
+            return time;
+        }
+        if (value instanceof String str && !str.isBlank()) {
+            try {
+                return LocalDateTime.parse(str);
+            } catch (Exception ignored) {
+                log.debug("Unable to parse timestamp {}", str);
+            }
+        }
+        return null;
     }
 }

@@ -22,4 +22,8 @@ public interface ApplicationService {
     boolean hasApplied(int jobId, int candidateId);
 
     long countByJob(int jobId);
+
+    long countByJobAndStatus(int jobId, String status);
+
+    long countAll();
 }

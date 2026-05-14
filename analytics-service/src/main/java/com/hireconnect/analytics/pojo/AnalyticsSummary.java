@@ -13,7 +13,9 @@ public class AnalyticsSummary {
 
     // Recruiter-level metrics
     private int recruiterId;
+    private long totalJobs;
     private long totalJobsPosted;
+    private long totalApplications;
     private long totalApplicationsReceived;
     private long shortlistedCount;
     private long offeredCount;
@@ -25,6 +27,7 @@ public class AnalyticsSummary {
     private long totalActiveJobs;
     private long totalCandidates;
     private long totalRecruiters;
+    private long totalJobsAllTime;
     private long totalApplicationsAllTime;
     private long totalInterviewsScheduled;
     private long activeSubscriptions;

@@ -9,11 +9,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.web.server.ServerWebExchange;
 
 import java.security.Key;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
@@ -27,6 +32,8 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
             "/api/v1/auth/refresh",
             "/api/v1/auth/validate",
             "/api/v1/jobs",      // GET only - public job listing
+            "/api/v1/payments/key",
+            "/uploads",          // Resume file downloads (static files)
             "/swagger-ui",
             "/v3/api-docs",
             "/actuator/health",
@@ -47,6 +54,11 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
             ServerHttpRequest request = exchange.getRequest();
             String path = request.getPath().value();
 
+            // Always allow CORS preflight requests for browser clients.
+            if (request.getMethod() == HttpMethod.OPTIONS) {
+                return chain.filter(exchange);
+            }
+
             // Skip JWT check for open endpoints
             boolean isOpen = OPEN_ENDPOINTS.stream().anyMatch(path::startsWith);
             if (isOpen && request.getMethod() != null && request.getMethod().name().equals("GET")) {
@@ -60,8 +72,7 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
             String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 log.warn("Missing or malformed Authorization header for path: {}", path);
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete();
+                return writeUnauthorized(exchange, "Missing or malformed Authorization header");
             }
 
             String token = authHeader.substring(7);
@@ -83,10 +94,18 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
 
             } catch (JwtException e) {
                 log.warn("Invalid JWT for path {}: {}", path, e.getMessage());
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete();
+                return writeUnauthorized(exchange, "Invalid or expired token");
             }
         };
+    }
+
+    private reactor.core.publisher.Mono<Void> writeUnauthorized(ServerWebExchange exchange, String message) {
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        byte[] body = ("{\"error\":\"UNAUTHORIZED\",\"message\":\"" + message + "\"}")
+                .getBytes(StandardCharsets.UTF_8);
+        DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(body);
+        return exchange.getResponse().writeWith(reactor.core.publisher.Mono.just(buffer));
     }
 
     private Key getSigningKey() {

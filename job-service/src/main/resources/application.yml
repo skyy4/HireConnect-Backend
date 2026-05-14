@@ -20,6 +20,18 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
     open-in-view: false
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 5000ms
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+
 app:
   jwt:
     secret: ${JWT_SECRET:Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2}
@@ -31,7 +43,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 
 springdoc:
   api-docs:

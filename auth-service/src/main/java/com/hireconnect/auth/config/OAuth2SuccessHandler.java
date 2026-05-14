@@ -2,7 +2,6 @@ package com.hireconnect.auth.config;
 
 import com.hireconnect.auth.pojo.AuthResponse;
 import com.hireconnect.auth.service.AuthService;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
@@ -25,7 +25,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
         String email = oAuth2User.getAttribute("email");
@@ -36,8 +36,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         AuthResponse authResponse = authService.oAuthLogin(email, "CANDIDATE");
 
-        String targetUrl = frontendUrl + "/oauth-redirect?token=" + authResponse.getToken() 
-                + "&refreshToken=" + authResponse.getRefreshToken();
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl)
+                .path("/oauth-redirect")
+                .queryParam("token", authResponse.getToken())
+                .queryParam("refreshToken", authResponse.getRefreshToken())
+                .build(true)
+                .toUriString();
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }

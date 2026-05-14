@@ -36,7 +36,7 @@
 
 ## 🛠️ Technology Stack
 
-- **Backend:** Java 17 + Spring Boot 3.2.5
+- **Backend:** Java 21 + Spring Boot 3.2.5
 - **Security:** Spring Security + JWT (JJWT 0.11.5) + OAuth2 (GitHub)
 - **Database:** MySQL 8 (one DB per service)
 - **Messaging:** RabbitMQ (async notifications)
@@ -50,10 +50,15 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Java 17+
+- Java 21+
 - Maven 3.9+
 - Docker & Docker Compose
 - MySQL 8 (or use Docker)
+
+### Case Study Document
+
+- Corrected and consolidated case study: `docs/hireconnect-case-study-v1.1.md`
+- Frontend compatibility guide: `docs/frontend-integration.md`
 
 ### 1. Clone & build all services
 
@@ -66,7 +71,7 @@ mvn clean package -DskipTests
 ### 2. Run with Docker Compose (recommended)
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 All services will start automatically with infrastructure (MySQL, RabbitMQ, Redis).
@@ -92,41 +97,98 @@ cd api-gateway && mvn spring-boot:run
 
 ## 🔑 API Endpoints (via Gateway on port 8080)
 
+Source of truth: controller mappings in each service `*Resource` class + gateway route groups in `api-gateway/src/main/resources/application.yml`.
+
 ### Auth Service (`/api/v1/auth`)
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/v1/auth/register` | Register new user |
-| POST | `/api/v1/auth/login` | Login (returns JWT) |
-| POST | `/api/v1/auth/logout` | Logout |
+| POST | `/api/v1/auth/register` | Register user |
+| POST | `/api/v1/auth/login` | Login and get JWT |
+| POST | `/api/v1/auth/logout` | Logout current token |
 | POST | `/api/v1/auth/refresh` | Refresh access token |
-| GET | `/api/v1/auth/validate` | Validate token |
+| GET | `/api/v1/auth/validate?token=...` | Validate token |
+| GET | `/api/v1/auth/user/{userId}` | Get user credential metadata |
+| GET | `/api/v1/auth/users` | List users (admin) |
+| PATCH | `/api/v1/auth/users/{userId}/status` | Set user active status (admin) |
+
+### Profile Service (`/api/v1/profiles`)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/v1/profiles/candidates` | Create candidate profile |
+| GET | `/api/v1/profiles/candidates/{profileId}` | Candidate profile by profileId |
+| GET | `/api/v1/profiles/candidates/user/{userId}` | Candidate profile by auth userId |
+| PUT | `/api/v1/profiles/candidates/{profileId}` | Update candidate profile |
+| POST | `/api/v1/profiles/recruiters` | Create recruiter profile |
+| GET | `/api/v1/profiles/recruiters/{profileId}` | Recruiter profile by profileId |
+| GET | `/api/v1/profiles/recruiters/user/{userId}` | Recruiter profile by auth userId |
+| PUT | `/api/v1/profiles/recruiters/{profileId}` | Update recruiter profile |
+| POST | `/api/v1/profiles/candidates/{profileId}/resume/upload` | Upload resume (multipart) |
+| GET | `/api/v1/profiles/recruiters/{recruiterId}/team` | List recruiter team members |
 
 ### Job Service (`/api/v1/jobs`)
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/v1/jobs` | List all active jobs |
+| GET | `/api/v1/jobs` | List active jobs |
+| GET | `/api/v1/jobs/{jobId}` | Job details (+ optional view tracking params) |
 | GET | `/api/v1/jobs/search` | Search with filters |
-| POST | `/api/v1/jobs` | Post new job (Recruiter) |
-| PUT | `/api/v1/jobs/{id}` | Update job |
-| PATCH | `/api/v1/jobs/{id}/status` | Change status (ACTIVE/PAUSED/CLOSED) |
-| DELETE | `/api/v1/jobs/{id}` | Delete job |
+| GET | `/api/v1/jobs/recruiter/{recruiterId}` | Jobs posted by recruiter |
+| POST | `/api/v1/jobs` | Create job |
+| PUT | `/api/v1/jobs/{jobId}` | Update job |
+| PATCH | `/api/v1/jobs/{jobId}/status` | Update status |
+| POST | `/api/v1/jobs/bookmarks` | Save job bookmark |
+| GET | `/api/v1/jobs/{jobId}/views/count` | View count |
 
 ### Application Service (`/api/v1/applications`)
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/v1/applications` | Submit application (Candidate) |
-| GET | `/api/v1/applications/candidate/{id}` | My applications |
-| GET | `/api/v1/applications/job/{id}` | Applications for a job |
-| PATCH | `/api/v1/applications/{id}/status` | Update status (Recruiter) |
-| PATCH | `/api/v1/applications/{id}/withdraw` | Withdraw (Candidate) |
+| POST | `/api/v1/applications` | Submit application |
+| GET | `/api/v1/applications/{applicationId}` | Get one application |
+| GET | `/api/v1/applications/candidate/{candidateId}` | Candidate applications |
+| GET | `/api/v1/applications/job/{jobId}` | Job applications (`?status=` optional) |
+| PATCH | `/api/v1/applications/{applicationId}/status` | Update status |
+| PATCH | `/api/v1/applications/{applicationId}/withdraw?candidateId={candidateId}` | Withdraw application |
+| GET | `/api/v1/applications/check?jobId={jobId}&candidateId={candidateId}` | Check already applied |
 
 ### Interview Service (`/api/v1/interviews`)
 | Method | Endpoint | Description |
 |---|---|---|
 | POST | `/api/v1/interviews` | Schedule interview |
-| PATCH | `/api/v1/interviews/{id}/confirm` | Confirm interview |
-| PATCH | `/api/v1/interviews/{id}/reschedule` | Reschedule |
-| PATCH | `/api/v1/interviews/{id}/cancel` | Cancel |
+| GET | `/api/v1/interviews/{interviewId}` | Interview details |
+| GET | `/api/v1/interviews/candidate/{candidateId}` | Candidate interviews |
+| GET | `/api/v1/interviews/recruiter/{recruiterId}` | Recruiter interviews |
+| PATCH | `/api/v1/interviews/{interviewId}/confirm` | Confirm interview |
+| PATCH | `/api/v1/interviews/{interviewId}/reschedule` | Reschedule interview |
+| PATCH | `/api/v1/interviews/{interviewId}/cancel` | Cancel interview |
+
+### Notifications + Messages (`/api/v1/notifications`, `/api/v1/messages`)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/notifications/user/{userId}` | User notifications |
+| PATCH | `/api/v1/notifications/{notificationId}/read` | Mark notification read |
+| POST | `/api/v1/messages` | Send message |
+| GET | `/api/v1/messages/conversation?userId1=...&userId2=...` | Conversation thread |
+| GET | `/api/v1/messages/inbox/{userId}` | Inbox |
+
+### Subscription + Billing (`/api/v1/subscriptions`, `/api/v1/invoices`, `/api/v1/wallet`)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/v1/subscriptions` | Subscribe recruiter |
+| GET | `/api/v1/subscriptions/recruiter/{recruiterId}/active` | Active plan |
+| PATCH | `/api/v1/subscriptions/recruiter/{recruiterId}/renew` | Renew/upgrade |
+| GET | `/api/v1/invoices/recruiter/{recruiterId}` | Recruiter invoices |
+| GET | `/api/v1/wallet/{userId}/balance` | Wallet balance |
+
+### Analytics (`/api/v1/analytics`)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/analytics/recruiter/{recruiterId}` | Recruiter dashboard metrics |
+| GET | `/api/v1/analytics/job/{jobId}` | Job-level analytics |
+| GET | `/api/v1/analytics/admin` | Platform analytics |
+
+### Identifier semantics
+- `userId`: identity from auth-service/JWT claims.
+- `profileId`: profile-service record id (candidate/recruiter profile).
+- `candidateId` / `recruiterId`: domain actor id used by application/interview/job flows.
 
 ---
 
