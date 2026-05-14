@@ -154,8 +154,10 @@ services:
         value: 3lUWPCLiqkVK9Nsi
       - key: JWT_SECRET
         value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
-      - key: SPRING_AUTOCONFIGURE_EXCLUDE
-        value: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - key: SPRING_RABBITMQ_ADDRESSES
+        value: amqps://wblzpslz:nomrMg0i7EAeeKo62WRBFUUNs9VrtoEn@lionfish.rmq.cloudamqp.com/wblzpslz
+      - key: MANAGEMENT_HEALTH_RABBIT_ENABLED
+        value: "false"
 
   # ── Notification Service ────────────────────────────────────────────────────
   - type: web
