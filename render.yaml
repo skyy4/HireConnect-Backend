@@ -1,0 +1,286 @@
+## HireConnect — Render Deployment Config
+## Free tier: 750 hrs/month, Docker builds from GitHub
+
+services:
+
+  # ── API Gateway ─────────────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-gateway
+    env: docker
+    dockerfilePath: ./api-gateway/Dockerfile
+    dockerContext: ./api-gateway
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: hireconnect-auth
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: PROFILE_SERVICE_URL
+        fromService:
+          name: hireconnect-profile
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: JOB_SERVICE_URL
+        fromService:
+          name: hireconnect-job
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: APPLICATION_SERVICE_URL
+        fromService:
+          name: hireconnect-application
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: INTERVIEW_SERVICE_URL
+        fromService:
+          name: hireconnect-interview
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: NOTIFICATION_SERVICE_URL
+        fromService:
+          name: hireconnect-notification
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: SUBSCRIPTION_SERVICE_URL
+        fromService:
+          name: hireconnect-subscription
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: ANALYTICS_SERVICE_URL
+        fromService:
+          name: hireconnect-analytics
+          type: web
+          property: host
+          envVarPrefix: http://
+
+  # ── Auth Service ────────────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-auth
+    env: docker
+    dockerfilePath: ./auth-service/Dockerfile
+    dockerContext: ./auth-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        value: jdbc:mysql://gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com:4000/hireconnect_auth?createDatabaseIfNotExist=true&useSSL=true&requireSSL=false&verifyServerCertificate=false&allowPublicKeyRetrieval=true
+      - key: DB_USERNAME
+        value: 3go8pE31Kujmmxa.root
+      - key: DB_PASSWORD
+        value: 3lUWPCLiqkVK9Nsi
+      - key: REDIS_HOST
+        value: relaxed-kid-123372.upstash.io
+      - key: REDIS_PORT
+        value: "6379"
+      - key: SPRING_DATA_REDIS_PASSWORD
+        value: gQAAAAAAAeHsAAIgcDFmYWUyMWZkZGM1MDA0ODBhOTUwYzk3NTJkMGU0ZDY5Mg
+      - key: SPRING_DATA_REDIS_SSL_ENABLED
+        value: "true"
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      - key: JWT_EXPIRATION_MS
+        value: "86400000"
+      - key: GITHUB_CLIENT_ID
+        sync: false   # Set manually in Render dashboard
+      - key: GITHUB_CLIENT_SECRET
+        sync: false   # Set manually in Render dashboard
+      - key: APP_FRONTEND_URL
+        sync: false   # Set to your Vercel URL after deploy
+      - key: MANAGEMENT_HEALTH_MAIL_ENABLED
+        value: "false"
+
+  # ── Profile Service ─────────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-profile
+    env: docker
+    dockerfilePath: ./profile-service/Dockerfile
+    dockerContext: ./profile-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        value: jdbc:mysql://gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com:4000/hireconnect_profile?createDatabaseIfNotExist=true&useSSL=true&requireSSL=false&verifyServerCertificate=false&allowPublicKeyRetrieval=true
+      - key: DB_USERNAME
+        value: 3go8pE31Kujmmxa.root
+      - key: DB_PASSWORD
+        value: 3lUWPCLiqkVK9Nsi
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+
+  # ── Job Service ─────────────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-job
+    env: docker
+    dockerfilePath: ./job-service/Dockerfile
+    dockerContext: ./job-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        value: jdbc:mysql://gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com:4000/hireconnect_jobs?createDatabaseIfNotExist=true&useSSL=true&requireSSL=false&verifyServerCertificate=false&allowPublicKeyRetrieval=true
+      - key: DB_USERNAME
+        value: 3go8pE31Kujmmxa.root
+      - key: DB_PASSWORD
+        value: 3lUWPCLiqkVK9Nsi
+      - key: REDIS_HOST
+        value: relaxed-kid-123372.upstash.io
+      - key: REDIS_PORT
+        value: "6379"
+      - key: SPRING_DATA_REDIS_PASSWORD
+        value: gQAAAAAAAeHsAAIgcDFmYWUyMWZkZGM1MDA0ODBhOTUwYzk3NTJkMGU0ZDY5Mg
+      - key: SPRING_DATA_REDIS_SSL_ENABLED
+        value: "true"
+      - key: RABBITMQ_HOST
+        value: lionfish.rmq.cloudamqp.com
+      - key: RABBITMQ_PORT
+        value: "5671"
+      - key: RABBITMQ_USER
+        value: wblzpslz
+      - key: RABBITMQ_PASS
+        value: nomrMg0i7EAeeKo62WRBFUUNs9VrtoEn
+      - key: SPRING_RABBITMQ_VIRTUAL_HOST
+        value: wblzpslz
+      - key: SPRING_RABBITMQ_SSL_ENABLED
+        value: "true"
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+
+  # ── Application Service ─────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-application
+    env: docker
+    dockerfilePath: ./application-service/Dockerfile
+    dockerContext: ./application-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        value: jdbc:mysql://gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com:4000/hireconnect_applications?createDatabaseIfNotExist=true&useSSL=true&requireSSL=false&verifyServerCertificate=false&allowPublicKeyRetrieval=true
+      - key: DB_USERNAME
+        value: 3go8pE31Kujmmxa.root
+      - key: DB_PASSWORD
+        value: 3lUWPCLiqkVK9Nsi
+      - key: RABBITMQ_HOST
+        value: lionfish.rmq.cloudamqp.com
+      - key: RABBITMQ_PORT
+        value: "5671"
+      - key: RABBITMQ_USER
+        value: wblzpslz
+      - key: RABBITMQ_PASS
+        value: nomrMg0i7EAeeKo62WRBFUUNs9VrtoEn
+      - key: SPRING_RABBITMQ_VIRTUAL_HOST
+        value: wblzpslz
+      - key: SPRING_RABBITMQ_SSL_ENABLED
+        value: "true"
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+
+  # ── Interview Service ───────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-interview
+    env: docker
+    dockerfilePath: ./interview-service/Dockerfile
+    dockerContext: ./interview-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        value: jdbc:mysql://gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com:4000/hireconnect_interviews?createDatabaseIfNotExist=true&useSSL=true&requireSSL=false&verifyServerCertificate=false&allowPublicKeyRetrieval=true
+      - key: DB_USERNAME
+        value: 3go8pE31Kujmmxa.root
+      - key: DB_PASSWORD
+        value: 3lUWPCLiqkVK9Nsi
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+
+  # ── Notification Service ────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-notification
+    env: docker
+    dockerfilePath: ./notification-service/Dockerfile
+    dockerContext: ./notification-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        value: jdbc:mysql://gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com:4000/hireconnect_notifications?createDatabaseIfNotExist=true&useSSL=true&requireSSL=false&verifyServerCertificate=false&allowPublicKeyRetrieval=true
+      - key: DB_USERNAME
+        value: 3go8pE31Kujmmxa.root
+      - key: DB_PASSWORD
+        value: 3lUWPCLiqkVK9Nsi
+      - key: RABBITMQ_HOST
+        value: lionfish.rmq.cloudamqp.com
+      - key: RABBITMQ_PORT
+        value: "5671"
+      - key: RABBITMQ_USER
+        value: wblzpslz
+      - key: RABBITMQ_PASS
+        value: nomrMg0i7EAeeKo62WRBFUUNs9VrtoEn
+      - key: SPRING_RABBITMQ_VIRTUAL_HOST
+        value: wblzpslz
+      - key: SPRING_RABBITMQ_SSL_ENABLED
+        value: "true"
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      - key: MAIL_USERNAME
+        sync: false   # Set manually in Render dashboard
+      - key: MAIL_PASSWORD
+        sync: false   # Set manually in Render dashboard
+
+  # ── Subscription Service ────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-subscription
+    env: docker
+    dockerfilePath: ./subscription-service/Dockerfile
+    dockerContext: ./subscription-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        value: jdbc:mysql://gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com:4000/hireconnect_subscriptions?createDatabaseIfNotExist=true&useSSL=true&requireSSL=false&verifyServerCertificate=false&allowPublicKeyRetrieval=true
+      - key: DB_USERNAME
+        value: 3go8pE31Kujmmxa.root
+      - key: DB_PASSWORD
+        value: 3lUWPCLiqkVK9Nsi
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+
+  # ── Analytics Service ───────────────────────────────────────────────────────
+  - type: web
+    name: hireconnect-analytics
+    env: docker
+    dockerfilePath: ./analytics-service/Dockerfile
+    dockerContext: ./analytics-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: JWT_SECRET
+        value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
+      - key: JOB_SERVICE_URL
+        fromService:
+          name: hireconnect-job
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: APPLICATION_SERVICE_URL
+        fromService:
+          name: hireconnect-application
+          type: web
+          property: host
+          envVarPrefix: http://
+      - key: SUBSCRIPTION_SERVICE_URL
+        fromService:
+          name: hireconnect-subscription
+          type: web
+          property: host
+          envVarPrefix: http://
