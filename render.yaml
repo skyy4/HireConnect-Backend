@@ -15,21 +15,21 @@ services:
       - key: JWT_SECRET
         value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
       - key: AUTH_SERVICE_URL
-        value: https://hireconnect-auth.onrender.com
+        value: https://hireconnect-auth-r6wc.onrender.com
       - key: PROFILE_SERVICE_URL
-        value: https://hireconnect-profile.onrender.com
+        value: https://hireconnect-profile-xyzl.onrender.com
       - key: JOB_SERVICE_URL
-        value: https://hireconnect-job.onrender.com
+        value: https://hireconnect-job-0l0c.onrender.com
       - key: APPLICATION_SERVICE_URL
-        value: https://hireconnect-application.onrender.com
+        value: https://hireconnect-application-b2fn.onrender.com
       - key: INTERVIEW_SERVICE_URL
-        value: https://hireconnect-interview.onrender.com
+        value: https://hireconnect-interview-fz54.onrender.com
       - key: NOTIFICATION_SERVICE_URL
-        value: https://hireconnect-notification.onrender.com
+        value: https://hireconnect-notification-gmp5.onrender.com
       - key: SUBSCRIPTION_SERVICE_URL
         value: https://hireconnect-subscription.onrender.com
       - key: ANALYTICS_SERVICE_URL
-        value: https://hireconnect-analytics.onrender.com
+        value: https://hireconnect-analytics-bu3o.onrender.com
 
   # ── Auth Service ────────────────────────────────────────────────────────────
   - type: web
@@ -217,8 +217,8 @@ services:
       - key: JWT_SECRET
         value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
       - key: JOB_SERVICE_URL
-        value: https://hireconnect-job.onrender.com
+        value: https://hireconnect-job-0l0c.onrender.com
       - key: APPLICATION_SERVICE_URL
-        value: https://hireconnect-application.onrender.com
+        value: https://hireconnect-application-b2fn.onrender.com
       - key: SUBSCRIPTION_SERVICE_URL
         value: https://hireconnect-subscription.onrender.com
