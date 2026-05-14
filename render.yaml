@@ -136,6 +136,8 @@ services:
         value: amqps://wblzpslz:nomrMg0i7EAeeKo62WRBFUUNs9VrtoEn@lionfish.rmq.cloudamqp.com/wblzpslz
       - key: MANAGEMENT_HEALTH_RABBIT_ENABLED
         value: "false"
+      - key: SERVICES_JOB_SERVICE
+        value: https://hireconnect-job-0l0c.onrender.com
       - key: JWT_SECRET
         value: Y2hpcHN0YWNrbGFienpiYXJjb2RlaGlyZWNvbm5lY3RzZWNyZXRrZXkyMDI2
 
@@ -224,3 +226,7 @@ services:
         value: https://hireconnect-application-b2fn.onrender.com
       - key: SUBSCRIPTION_SERVICE_URL
         value: https://hireconnect-subscription.onrender.com
+      - key: SERVICES_JOB_SERVICE
+        value: https://hireconnect-job-0l0c.onrender.com
+      - key: SERVICES_APPLICATION_SERVICE
+        value: https://hireconnect-application-b2fn.onrender.com
